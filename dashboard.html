@@ -1,0 +1,604 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSR Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f5f6fa;
+            color: #222;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+        .header {
+            background: linear-gradient(90deg, #6a82fb 0%, #fc5c7d 100%);
+            color: #fff;
+            padding: 2rem 1rem;
+            text-align: center;
+            border-bottom-left-radius: 1rem;
+            border-bottom-right-radius: 1rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            font-size: 2.8rem;
+            margin-bottom: 0.5rem;
+            font-weight: 900;
+        }
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        .cards-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            justify-content: center;
+            margin: -3rem auto 2rem auto; /* Overlap with header for visual effect */
+            max-width: 1200px;
+            padding: 0 1rem;
+        }
+        .card {
+            background: #fff;
+            border-radius: 1rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            padding: 1.5rem 2rem;
+            text-align: center;
+            min-width: 160px;
+            flex: 1 1 auto;
+            transition: transform 0.2s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .card-label {
+            font-size: 0.9rem;
+            color: #888;
+            margin-bottom: 0.3rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .card-value {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #6a82fb;
+        }
+        .section {
+            margin: 2rem auto;
+            max-width: 1200px;
+            background: #fff;
+            border-radius: 1rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            padding: 2rem;
+        }
+        h2 {
+            color: #333;
+            margin-bottom: 1.5rem;
+            font-size: 1.8rem;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 0.5rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            border-radius: 0.5rem;
+            overflow: hidden; /* Ensures rounded corners on table */
+        }
+        th, td {
+            border-bottom: 1px solid #eee;
+            padding: 0.8rem 1rem;
+            font-size: 0.95rem;
+            text-align: left;
+        }
+        th {
+            color: #fff;
+            background: #6a82fb; /* Use a primary color for headers */
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        tr:nth-child(even) {
+            background: #f9f9fc;
+        }
+        tr:hover td {
+            background: #eef1f9;
+        }
+        .charts-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            justify-content: center;
+        }
+        .chart-block {
+            flex: 1 1 45%; /* Adjust for 2 columns on larger screens */
+            min-width: 300px; /* Minimum width for charts */
+            padding: 1rem;
+            box-sizing: border-box; /* Include padding in element's total width */
+        }
+        #trendChart {
+            width: 100%; /* Make trend chart span full width */
+            min-height: 400px;
+        }
+        .filters-section {
+            padding-top: 0;
+            margin-top: 1rem;
+        }
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            align-items: end;
+        }
+        .filter-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+            color: #555;
+        }
+        .filter-group select, .filter-group input[type="date"] {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid #ddd;
+            border-radius: 0.5rem;
+            background-color: #fff;
+            font-size: 1rem;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .filters-grid button {
+            background: #4CAF50;
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 700;
+            transition: background-color 0.3s ease;
+        }
+        .filters-grid button:hover {
+            background-color: #45a049;
+        }
+        @media (max-width: 900px) {
+            .cards-row {
+                margin-top: 1rem;
+                flex-direction: column;
+                align-items: center;
+            }
+            .card {
+                min-width: 80%; /* Cards take more width on small screens */
+            }
+            .charts-row {
+                flex-direction: column;
+                align-items: center;
+            }
+            .chart-block {
+                min-width: 95%; /* Charts take full width on small screens */
+            }
+            .header h1 {
+                font-size: 2rem;
+            }
+            .header p {
+                font-size: 0.9rem;
+            }
+            .filters-grid {
+                grid-template-columns: 1fr; /* Stack filters on small screens */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>CSR Analytics Dashboard</h1>
+        <p>Automated metrics & analysis from Jira export</p>
+    </div>
+    
+    <div class="cards-row">
+      <div class="card"><div class="card-label">Total CSRs</div><div class="card-value" id="kpiTotalCSRs">118</div></div>
+      <div class="card"><div class="card-label">Avg Delay (Days)</div><div class="card-value" id="kpiAvgDelay">5.4</div></div>
+      <div class="card"><div class="card-label">% Released Late</div><div class="card-value" id="kpiPctLate">80.5%</div></div>
+      <div class="card"><div class="card-label">>30d in Dev</div><div class="card-value" id="kpiNumDevGT30">0</div></div>
+      <div class="card"><div class="card-label">>60d Dev→Release</div><div class="card-value" id="kpiNumDevLibGT60">103</div></div>
+      <div class="card"><div class="card-label">Longest Delay (Days)</div><div class="card-value" id="kpiMaxDelay">238.6</div></div>
+      <div class="card"><div class="card-label">Shortest Delay (Days)</div><div class="card-value" id="kpiMinDelay">0.4</div></div>
+      <div class="card"><div class="card-label">Last updated</div><div class="card-value">2025-06-13 10:49</div></div>
+    </div>
+    
+    
+    <div class="section filters-section">
+        <h2>Filter Data</h2>
+        <div class="filters-grid">
+            <div class="filter-group">
+                <label for="filterEstado">Estado:</label>
+                <select id="filterEstado" onchange="filterData()">
+                    <option value="">All</option>
+                    <option value="Estabilización">Estabilización</option><option value="Liberada">Liberada</option><option value="Terminada">Terminada</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filterPr">Prioridad:</label>
+                <select id="filterPr" onchange="filterData()">
+                    <option value="">All</option>
+                    <option value="Alta">Alta</option><option value="Baja">Baja</option><option value="Media">Media</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filterTipo">Tipo:</label>
+                <select id="filterTipo" onchange="filterData()">
+                    <option value="">All</option>
+                    <option value="Historia">Historia</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filterPersona">Persona Asignada:</label>
+                <select id="filterPersona" onchange="filterData()">
+                    <option value="">All</option>
+                    <option value="Alejandro Galindo Reyes">Alejandro Galindo Reyes</option><option value="Ariel De Coninck Bahamondes">Ariel De Coninck Bahamondes</option><option value="Brandon Arteaga Cruz">Brandon Arteaga Cruz</option><option value="David Perez Carrillo">David Perez Carrillo</option><option value="Diana Ramos Martinez">Diana Ramos Martinez</option><option value="Edgar Luna Arreguin">Edgar Luna Arreguin</option><option value="Eduardo Pina Diaz">Eduardo Pina Diaz</option><option value="Eva Lizbeth Espinosa Vazquez">Eva Lizbeth Espinosa Vazquez</option><option value="Felipe Romano Rodriguez">Felipe Romano Rodriguez</option><option value="Fernando Cruz Ortega">Fernando Cruz Ortega</option><option value="Guillermo Daniel Valdez Villa">Guillermo Daniel Valdez Villa</option><option value="Ivan Salinas Marquez">Ivan Salinas Marquez</option><option value="Javier Ortega Leal">Javier Ortega Leal</option><option value="Joaquin Enrique Gudino Lemus">Joaquin Enrique Gudino Lemus</option><option value="Jonathan Hernandez Gonzalez">Jonathan Hernandez Gonzalez</option><option value="Jose Jesus Tirado Perez">Jose Jesus Tirado Perez</option><option value="Juan Camilo Camacho Beltran">Juan Camilo Camacho Beltran</option><option value="Juan Carlos Teofilo Ontiveros">Juan Carlos Teofilo Ontiveros</option><option value="Kevin Jared Soria Valdes">Kevin Jared Soria Valdes</option><option value="Luis Antonio Pena Cornejo">Luis Antonio Pena Cornejo</option><option value="Luis Erik Arenas Toral">Luis Erik Arenas Toral</option><option value="Luis Fernando Ortega Chavarria">Luis Fernando Ortega Chavarria</option><option value="Luis Ramos Flores">Luis Ramos Flores</option><option value="Manuel Edgar Suarez Caneda">Manuel Edgar Suarez Caneda</option><option value="Maria De Los Angeles Contreras Jimenez">Maria De Los Angeles Contreras Jimenez</option><option value="Maria Teresa Gonzalez Hernandez">Maria Teresa Gonzalez Hernandez</option><option value="Sandy Yanira Ramirez Calvillo">Sandy Yanira Ramirez Calvillo</option><option value="Teresita Del Nino Jesus Gonzalez Guillen">Teresita Del Nino Jesus Gonzalez Guillen</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filterDesarrollador">Desarrollador:</label>
+                <select id="filterDesarrollador" onchange="filterData()">
+                    <option value="">All</option>
+                    <option value="Alejandro Galindo Reyes">Alejandro Galindo Reyes</option><option value="Alexis Mendoza Valencia">Alexis Mendoza Valencia</option><option value="Arturo Hernandez Martinez">Arturo Hernandez Martinez</option><option value="Brandon Arteaga Cruz">Brandon Arteaga Cruz</option><option value="Daniel Fernando Perez Ramirez">Daniel Fernando Perez Ramirez</option><option value="David Perez Carrillo">David Perez Carrillo</option><option value="Diana Ramos Martinez">Diana Ramos Martinez</option><option value="Ezequiel De Jesus Gabriel">Ezequiel De Jesus Gabriel</option><option value="Felipe Romano Rodriguez">Felipe Romano Rodriguez</option><option value="Fernando Cruz Ortega">Fernando Cruz Ortega</option><option value="Guillermo Daniel Valdez Villa">Guillermo Daniel Valdez Villa</option><option value="Gustavo Sandoval Morales">Gustavo Sandoval Morales</option><option value="Ivan Josafat Chavez Marquez">Ivan Josafat Chavez Marquez</option><option value="Ivan Salinas Marquez">Ivan Salinas Marquez</option><option value="Janette Cerecedo Ruiz">Janette Cerecedo Ruiz</option><option value="Javier Ortega Leal">Javier Ortega Leal</option><option value="Jesus Efren Lopez Salado">Jesus Efren Lopez Salado</option><option value="Jesus Pineda Velazquez">Jesus Pineda Velazquez</option><option value="Jonathan Hernandez Gonzalez">Jonathan Hernandez Gonzalez</option><option value="Jose Jesus Tirado Perez">Jose Jesus Tirado Perez</option><option value="Juan Camilo Camacho Beltran">Juan Camilo Camacho Beltran</option><option value="Luis Cabrera Rivera">Luis Cabrera Rivera</option><option value="Luis Ramos Flores">Luis Ramos Flores</option><option value="Nestor Jesus Real Estrada">Nestor Jesus Real Estrada</option><option value="Omar Alejandro Quinones Alvarez">Omar Alejandro Quinones Alvarez</option><option value="Ricardo Yael Zuniga Vazquez">Ricardo Yael Zuniga Vazquez</option><option value="Sinuhe Jardinez Hernandez">Sinuhe Jardinez Hernandez</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="startDate">Fecha Liberación (Start):</label>
+                <input type="date" id="startDate" value="2025-01-07" onchange="filterData()">
+            </div>
+            <div class="filter-group">
+                <label for="endDate">Fecha Liberación (End):</label>
+                <input type="date" id="endDate" value="2025-05-13" onchange="filterData()">
+            </div>
+            <button onclick="resetFilters()">Reset Filters</button>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>Status, Priority & Type Distribution</h2>
+        <div class="charts-row">
+            <div class="chart-block"><div id="estadoPie"></div></div>
+            <div class="chart-block"><div id="prPie"></div></div>
+            <div class="chart-block"><div id="tipoPie"></div></div>
+        </div>
+    </div>
+    <div class="section">
+        <h2>Trends: CSRs Created & Released by Week</h2>
+        <div id="trendChart"></div>
+    </div>
+    <div class="section">
+        <h2>Top 10 Most Delayed Releases</h2>
+        <table id="tableLate">
+            <thead><tr><th>Resumen</th><th>Clave</th><th>Días retraso</th><th>Persona asignada</th><th>Desarrollador</th></tr></thead>
+            <tbody><tr><td>Homologación Galería</td><td>TVADEP-13</td><td>238.6</td><td>Maria De Los Angeles Contreras Jimenez</td><td>nan</td></tr><tr><td>HU, Template Texto (float lead)</td><td>TVAENT-409</td><td>61.6</td><td>Joaquin Enrique Gudino Lemus</td><td>nan</td></tr><tr><td>Módulo espectacular</td><td>TVAENT-494</td><td>30.6</td><td>Teresita Del Nino Jesus Gonzalez Guillen</td><td>Luis Ramos Flores</td></tr><tr><td>Geobloqueo para player flotante</td><td>TVADEP-159</td><td>28.6</td><td>Ariel De Coninck Bahamondes</td><td>Jesus Efren Lopez Salado</td></tr><tr><td>Módulo Espectacular - Sin Card Grande </td><td>TVAENT-495</td><td>23.6</td><td>Luis Ramos Flores</td><td>Ricardo Yael Zuniga Vazquez</td></tr><tr><td>Implementación text to speech para notas - Android</td><td>TVADEP-28</td><td>22.8</td><td>Maria De Los Angeles Contreras Jimenez</td><td>Jesus Efren Lopez Salado</td></tr><tr><td>Actualización de ícono Live blog</td><td>TVAENT-433</td><td>21.6</td><td>David Perez Carrillo</td><td>David Perez Carrillo</td></tr><tr><td>FIX: Tarda en cerrarse el miniplayer</td><td>TVANOT-274</td><td>14.5</td><td>Diana Ramos Martinez</td><td>Alexis Mendoza Valencia</td></tr><tr><td>Módulo vertical</td><td>TVAENT-497</td><td>9.6</td><td>Edgar Luna Arreguin</td><td>nan</td></tr><tr><td>En IOS se debe de mostrar el autor como se muestra en Android</td><td>TVANOT-275</td><td>8.5</td><td>Manuel Edgar Suarez Caneda</td><td>Fernando Cruz Ortega</td></tr></tbody>
+        </table>
+    </div>
+    <div class="section">
+        <h2>Top 10 Longest Development (>30d)</h2>
+        <table id="tableDevGT30">
+            <thead><tr><th>Resumen</th><th>Clave</th><th>Días en dev</th><th>Persona asignada</th><th>Desarrollador</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    <div class="section">
+        <h2>Top 10 Longest Dev to Release (>60d)</h2>
+        <table id="tableDevLibGT60">
+            <thead><tr><th>Resumen</th><th>Clave</th><th>Días dev→liberada</th><th>Persona asignada</th><th>Desarrollador</th></tr></thead>
+            <tbody><tr><td>Homologación Galería</td><td>TVADEP-13</td><td>258.6</td><td>Maria De Los Angeles Contreras Jimenez</td><td>nan</td></tr><tr><td>[WEB]-Desarrollar los CTA para el link de Autores: Solo en interiores de Notas, Videos y Galerías (5).</td><td>TVANOT-25</td><td>250.7</td><td>Kevin Jared Soria Valdes</td><td>nan</td></tr><tr><td>Implementación text to speech para notas - Android</td><td>TVADEP-28</td><td>238.8</td><td>Maria De Los Angeles Contreras Jimenez</td><td>Jesus Efren Lopez Salado</td></tr><tr><td>[NELUMBO] Cintillo Redes Sociales </td><td>TVARCL-12</td><td>236.6</td><td>Diana Ramos Martinez</td><td>Brandon Arteaga Cruz</td></tr><tr><td>Épica: Perfil de autor</td><td>TVADEP-14</td><td>223.5</td><td>Maria De Los Angeles Contreras Jimenez</td><td>Jesus Efren Lopez Salado</td></tr><tr><td>Implementación text to speech para notas -iOS</td><td>TVADEP-27</td><td>210.5</td><td>Maria De Los Angeles Contreras Jimenez</td><td>Jesus Efren Lopez Salado</td></tr><tr><td>[ZEMSANIA] Vínculos en pie de foto</td><td>TVARCL-25</td><td>187.7</td><td>nan</td><td>nan</td></tr><tr><td>Take Over CMS</td><td>TVAOPS-58</td><td>183.6</td><td>Sandy Yanira Ramirez Calvillo</td><td>Ivan Josafat Chavez Marquez</td></tr><tr><td>Miniplayer: Se visualiza el icono de pausa/play cuando se tiene el video en pausa</td><td>TVANOT-112</td><td>166.7</td><td>nan</td><td>nan</td></tr><tr><td>FIX: al consultar el tags se sigue escuchando y  al regresar no se visualiza el miniplayer</td><td>TVANOT-146</td><td>145.7</td><td>Luis Erik Arenas Toral</td><td>Alejandro Galindo Reyes</td></tr></tbody>
+        </table>
+    </div>
+    <div class="section">
+        <h2>Workload by Assignee / Developer</h2>
+        <div class="charts-row">
+            <div class="chart-block"><div id="personaBar"></div></div>
+            <div class="chart-block"><div id="devBar"></div></div>
+        </div>
+    </div>
+    <div class="section">
+        <h2>Average Delay by Person / Developer</h2>
+        <div class="charts-row">
+            <div class="chart-block"><div id="personaDelay"></div></div>
+            <div class="chart-block"><div id="devDelay"></div></div>
+        </div>
+    </div>
+    <script>
+        // Store original data
+        // Use JSON.parse to safely parse the JSON string embedded by Python
+        const originalData = JSON.parse(`[{"Resumen": "Homologaci\u00f3n Galer\u00eda", "Clave": "TVADEP-13", "Creada": "2024-08-14 00:00:00", "Actualizada": "2025-05-02 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-02-05 13:36:00", "Fecha Planificada de Liberaci\u00f3n": "2024-09-03 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-29 13:30:00", "Liberaci\u00f3n retrasada por": 238.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 258.5625, "Persona asignada": "Maria De Los Angeles Contreras Jimenez", "Desarrollador": "", "Creada_week": "2024-08-12/2024-08-18"}, {"Resumen": "HU, Template Texto (float lead)", "Clave": "TVAENT-409", "Creada": "2025-02-05 00:00:00", "Actualizada": "2025-04-30 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Liberada", "Latest Transition to Listo": "2025-04-30 16:10:00", "Fecha Planificada de Liberaci\u00f3n": "2025-02-28 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-30 13:30:00", "Liberaci\u00f3n retrasada por": 61.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 84.5625, "Persona asignada": "Joaquin Enrique Gudino Lemus", "Desarrollador": "", "Creada_week": "2025-02-03/2025-02-09"}, {"Resumen": "M\u00f3dulo espectacular", "Clave": "TVAENT-494", "Creada": "2025-03-27 00:00:00", "Actualizada": "2025-05-09 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Liberada", "Latest Transition to Listo": "2025-09-05 16:46:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-08 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-05-08 13:30:00", "Liberaci\u00f3n retrasada por": 30.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 42.5625, "Persona asignada": "Teresita Del Nino Jesus Gonzalez Guillen", "Desarrollador": "Luis Ramos Flores", "Creada_week": "2025-03-24/2025-03-30"}, {"Resumen": "Geobloqueo para player flotante", "Clave": "TVADEP-159", "Creada": "2025-03-07 00:00:00", "Actualizada": "2025-05-02 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-02-05 13:36:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-01 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-29 13:30:00", "Liberaci\u00f3n retrasada por": 28.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 53.5625, "Persona asignada": "Ariel De Coninck Bahamondes", "Desarrollador": "Jesus Efren Lopez Salado", "Creada_week": "2025-03-03/2025-03-09"}, {"Resumen": "M\u00f3dulo Espectacular - Sin Card Grande ", "Clave": "TVAENT-495", "Creada": "2025-03-27 00:00:00", "Actualizada": "2025-05-09 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Liberada", "Latest Transition to Listo": "2025-09-05 16:46:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-15 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-05-08 13:30:00", "Liberaci\u00f3n retrasada por": 23.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 42.5625, "Persona asignada": "Luis Ramos Flores", "Desarrollador": "Ricardo Yael Zuniga Vazquez", "Creada_week": "2025-03-24/2025-03-30"}, {"Resumen": "Implementaci\u00f3n text to speech para notas - Android", "Clave": "TVADEP-28", "Creada": "2024-08-14 00:00:00", "Actualizada": "2025-04-14 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-10-04 17:48:00", "Fecha Planificada de Liberaci\u00f3n": "2025-03-18 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-09 18:20:00", "Liberaci\u00f3n retrasada por": 22.763888888890506, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 238.7638888888905, "Persona asignada": "Maria De Los Angeles Contreras Jimenez", "Desarrollador": "Jesus Efren Lopez Salado", "Creada_week": "2024-08-12/2024-08-18"}, {"Resumen": "Actualizaci\u00f3n de \u00edcono Live blog", "Clave": "TVAENT-433", "Creada": "2025-02-26 00:00:00", "Actualizada": "2025-04-02 00:00:00", "T": "Historia", "Pr": "Baja", "Estado": "Liberada", "Latest Transition to Listo": "2025-02-04 12:13:00", "Fecha Planificada de Liberaci\u00f3n": "2025-03-11 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-01 13:30:00", "Liberaci\u00f3n retrasada por": 21.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 34.5625, "Persona asignada": "David Perez Carrillo", "Desarrollador": "David Perez Carrillo", "Creada_week": "2025-02-24/2025-03-02"}, {"Resumen": "FIX: Tarda en cerrarse el miniplayer", "Clave": "TVANOT-274", "Creada": "2025-04-08 00:00:00", "Actualizada": "2025-05-13 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Liberada", "Latest Transition to Listo": "2025-05-13 13:26:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-29 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-05-13 11:32:00", "Liberaci\u00f3n retrasada por": 14.480555555557657, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 35.48055555555766, "Persona asignada": "Diana Ramos Martinez", "Desarrollador": "Alexis Mendoza Valencia", "Creada_week": "2025-04-07/2025-04-13"}, {"Resumen": "M\u00f3dulo vertical", "Clave": "TVAENT-497", "Creada": "2025-03-27 00:00:00", "Actualizada": "2025-05-09 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Liberada", "Latest Transition to Listo": "2025-09-05 16:46:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-29 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-05-08 13:30:00", "Liberaci\u00f3n retrasada por": 9.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 42.5625, "Persona asignada": "Edgar Luna Arreguin", "Desarrollador": "", "Creada_week": "2025-03-24/2025-03-30"}, {"Resumen": "En IOS se debe de mostrar el autor como se muestra en Android", "Clave": "TVANOT-275", "Creada": "2025-04-22 00:00:00", "Actualizada": "2025-05-13 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Liberada", "Latest Transition to Listo": "2025-05-13 13:23:00", "Fecha Planificada de Liberaci\u00f3n": "2025-05-05 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-05-13 10:52:00", "Liberaci\u00f3n retrasada por": 8.452777777776646, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 21.452777777776646, "Persona asignada": "Manuel Edgar Suarez Caneda", "Desarrollador": "Fernando Cruz Ortega", "Creada_week": "2025-04-21/2025-04-27"}, {"Resumen": "FIX: , tras el nuevo ajuste al tama\u00f1o de fuente en t\u00edtulos, en Azteca Noticias existe un espacio en blanco muy amplio entre el t\u00edtulo y teaser. Esto no se visualiza de la misma manera en ADN40, Azteca Uno, Deportes, Azteca 7, entre otros.", "Clave": "TVANOT-149", "Creada": "2024-11-29 00:00:00", "Actualizada": "2025-04-30 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-30 10:07:00", "Fecha Planificada de Liberaci\u00f3n": "2025-01-07 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-01-14 14:00:00", "Liberaci\u00f3n retrasada por": 7.583333333335759, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 46.58333333333576, "Persona asignada": "Maria Teresa Gonzalez Hernandez", "Desarrollador": "Arturo Hernandez Martinez", "Creada_week": "2024-11-25/2024-12-01"}, {"Resumen": "Take Over CMS fix head", "Clave": "TVAOPS-156", "Creada": "2025-04-14 00:00:00", "Actualizada": "2025-04-30 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-30 19:02:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-22 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-29 13:30:00", "Liberaci\u00f3n retrasada por": 7.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 15.5625, "Persona asignada": "", "Desarrollador": "Ivan Josafat Chavez Marquez", "Creada_week": "2025-04-14/2025-04-20"}, {"Resumen": "Ajustes generales", "Clave": "TVASEO-559", "Creada": "2025-03-19 00:00:00", "Actualizada": "2025-04-15 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-15 18:57:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-08 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-15 13:15:00", "Liberaci\u00f3n retrasada por": 7.552083333335759, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 27.55208333333576, "Persona asignada": "Maria De Los Angeles Contreras Jimenez", "Desarrollador": "Juan Camilo Camacho Beltran", "Creada_week": "2025-03-17/2025-03-23"}, {"Resumen": "Minificaci\u00f3n HTML Default - En vivo", "Clave": "TVASEO-566", "Creada": "2025-03-25 00:00:00", "Actualizada": "2025-04-15 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-15 18:59:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-08 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-15 13:15:00", "Liberaci\u00f3n retrasada por": 7.552083333335759, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 21.55208333333576, "Persona asignada": "Teresita Del Nino Jesus Gonzalez Guillen", "Desarrollador": "Juan Camilo Camacho Beltran", "Creada_week": "2025-03-24/2025-03-30"}, {"Resumen": "\u00c9pica: Perfil de autor", "Clave": "TVADEP-14", "Creada": "2024-08-14 00:00:00", "Actualizada": "2025-04-10 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Terminada", "Latest Transition to Listo": "2025-10-04 18:00:00", "Fecha Planificada de Liberaci\u00f3n": "2025-03-18 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-03-25 11:13:00", "Liberaci\u00f3n retrasada por": 7.46736111111386, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 223.46736111111386, "Persona asignada": "Maria De Los Angeles Contreras Jimenez", "Desarrollador": "Jesus Efren Lopez Salado", "Creada_week": "2024-08-12/2024-08-18"}, {"Resumen": "Separaci\u00f3n log in CTVs", "Clave": "TVAENT-524", "Creada": "2025-04-10 00:00:00", "Actualizada": "2025-04-23 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-23 09:55:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-17 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-22 13:30:00", "Liberaci\u00f3n retrasada por": 5.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 12.5625, "Persona asignada": "Maria Teresa Gonzalez Hernandez", "Desarrollador": "", "Creada_week": "2025-04-07/2025-04-13"}, {"Resumen": "En vivo", "Clave": "TVASEO-548", "Creada": "2025-03-13 00:00:00", "Actualizada": "2025-05-09 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Liberada", "Latest Transition to Listo": "2025-09-05 16:46:00", "Fecha Planificada de Liberaci\u00f3n": "2025-05-06 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-05-08 13:30:00", "Liberaci\u00f3n retrasada por": 2.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 56.5625, "Persona asignada": "Maria De Los Angeles Contreras Jimenez", "Desarrollador": "", "Creada_week": "2025-03-10/2025-03-16"}, {"Resumen": "incidencia - Schema LiveBlog para AMP", "Clave": "TVASEO-423", "Creada": "2024-12-26 00:00:00", "Actualizada": "2025-01-14 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-01-13 09:31:00", "Fecha Planificada de Liberaci\u00f3n": "2025-01-07 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-01-09 13:20:00", "Liberaci\u00f3n retrasada por": 2.555555555554747, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 14.555555555554747, "Persona asignada": "Maria De Los Angeles Contreras Jimenez", "Desarrollador": "Daniel Fernando Perez Ramirez", "Creada_week": "2024-12-23/2024-12-29"}, {"Resumen": "[ZEMSANIA] V\u00ednculos en pie de foto", "Clave": "TVARCL-25", "Creada": "2024-10-03 00:00:00", "Actualizada": "2025-04-08 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-08-04 17:04:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-08 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-08 17:31:00", "Liberaci\u00f3n retrasada por": 0.7298611111109494, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 187.72986111111095, "Persona asignada": "", "Desarrollador": "", "Creada_week": "2024-09-30/2024-10-06"}, {"Resumen": "Miniplayer: Se visualiza el icono de pausa/play cuando se tiene el video en pausa", "Clave": "TVANOT-112", "Creada": "2024-10-31 00:00:00", "Actualizada": "2025-04-16 00:00:00", "T": "Historia", "Pr": "Baja", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-16 09:48:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-15 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-15 17:30:00", "Liberaci\u00f3n retrasada por": 0.7291666666642413, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 166.72916666666424, "Persona asignada": "", "Desarrollador": "", "Creada_week": "2024-10-28/2024-11-03"}, {"Resumen": "FIX:  Un contenido de video si le das clic en el tag se sigue escuchando el audio", "Clave": "TVANOT-145", "Creada": "2024-11-21 00:00:00", "Actualizada": "2025-04-16 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-16 09:48:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-15 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-15 17:30:00", "Liberaci\u00f3n retrasada por": 0.7291666666642413, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 145.72916666666424, "Persona asignada": "Fernando Cruz Ortega", "Desarrollador": "Diana Ramos Martinez", "Creada_week": "2024-11-18/2024-11-24"}, {"Resumen": "FIX: al consultar el tags se sigue escuchando y  al regresar no se visualiza el miniplayer", "Clave": "TVANOT-146", "Creada": "2024-11-21 00:00:00", "Actualizada": "2025-04-16 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-16 09:48:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-15 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-15 17:30:00", "Liberaci\u00f3n retrasada por": 0.7291666666642413, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 145.72916666666424, "Persona asignada": "Luis Erik Arenas Toral", "Desarrollador": "Alejandro Galindo Reyes", "Creada_week": "2024-11-18/2024-11-24"}, {"Resumen": "El men\u00fa inferior desaparece", "Clave": "TVANOT-181", "Creada": "2024-12-24 00:00:00", "Actualizada": "2025-04-16 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-16 09:48:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-15 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-15 17:30:00", "Liberaci\u00f3n retrasada por": 0.7291666666642413, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 112.72916666666424, "Persona asignada": "Maria Teresa Gonzalez Hernandez", "Desarrollador": "Alejandro Galindo Reyes", "Creada_week": "2024-12-23/2024-12-29"}, {"Resumen": "Los autores tengan CTA en la app iOS", "Clave": "TVANOT-182", "Creada": "2024-12-24 00:00:00", "Actualizada": "2025-04-16 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-16 09:48:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-15 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-15 17:30:00", "Liberaci\u00f3n retrasada por": 0.7291666666642413, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 112.72916666666424, "Persona asignada": "Maria Teresa Gonzalez Hernandez", "Desarrollador": "Alejandro Galindo Reyes", "Creada_week": "2024-12-23/2024-12-29"}, {"Resumen": "Los autores tengan CTA en la app Android", "Clave": "TVANOT-183", "Creada": "2024-12-24 00:00:00", "Actualizada": "2025-04-16 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-16 09:48:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-15 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-15 17:30:00", "Liberaci\u00f3n retrasada por": 0.7291666666642413, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 112.72916666666424, "Persona asignada": "Maria Teresa Gonzalez Hernandez", "Desarrollador": "Felipe Romano Rodriguez", "Creada_week": "2024-12-23/2024-12-29"}, {"Resumen": "Liveblog para la aplicaci\u00f3n iOS", "Clave": "TVANOT-194", "Creada": "2025-01-06 00:00:00", "Actualizada": "2025-04-16 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-16 09:47:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-15 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-15 17:30:00", "Liberaci\u00f3n retrasada por": 0.7291666666642413, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 99.72916666666424, "Persona asignada": "Maria Teresa Gonzalez Hernandez", "Desarrollador": "Arturo Hernandez Martinez", "Creada_week": "2025-01-06/2025-01-12"}, {"Resumen": "Liveblog para la aplicaci\u00f3n Android", "Clave": "TVANOT-195", "Creada": "2025-01-06 00:00:00", "Actualizada": "2025-04-16 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-16 09:48:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-15 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-15 17:30:00", "Liberaci\u00f3n retrasada por": 0.7291666666642413, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 99.72916666666424, "Persona asignada": "Maria Teresa Gonzalez Hernandez", "Desarrollador": "Gustavo Sandoval Morales", "Creada_week": "2025-01-06/2025-01-12"}, {"Resumen": "FIX: Al hacer scroll en un miniplayer, cambia de tama\u00f1o", "Clave": "TVANOT-204", "Creada": "2025-01-16 00:00:00", "Actualizada": "2025-04-16 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-16 09:48:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-15 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-15 17:30:00", "Liberaci\u00f3n retrasada por": 0.7291666666642413, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 89.72916666666424, "Persona asignada": "Maria Teresa Gonzalez Hernandez", "Desarrollador": "Luis Ramos Flores", "Creada_week": "2025-01-13/2025-01-19"}, {"Resumen": "Se requiere adaptar Android para recibir grupo de autores", "Clave": "TVANOT-207", "Creada": "2025-01-17 00:00:00", "Actualizada": "2025-04-16 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-16 09:48:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-15 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-15 17:30:00", "Liberaci\u00f3n retrasada por": 0.7291666666642413, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 88.72916666666424, "Persona asignada": "Maria Teresa Gonzalez Hernandez", "Desarrollador": "Luis Ramos Flores", "Creada_week": "2025-01-13/2025-01-19"}, {"Resumen": "FIX: Cuando el autor no tenga pagina se debe de mostrar como en iOS , sin link el nombre del autor", "Clave": "TVANOT-214", "Creada": "2025-01-29 00:00:00", "Actualizada": "2025-04-16 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-16 09:48:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-15 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-15 17:30:00", "Liberaci\u00f3n retrasada por": 0.7291666666642413, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 76.72916666666424, "Persona asignada": "Juan Carlos Teofilo Ontiveros", "Desarrollador": "Gustavo Sandoval Morales", "Creada_week": "2025-01-27/2025-02-02"}, {"Resumen": "FIX: Se realizara un REFACTOR de los Webviwes en ANDROID", "Clave": "TVANOT-243", "Creada": "2025-02-13 00:00:00", "Actualizada": "2025-04-16 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-16 09:48:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-15 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-15 17:30:00", "Liberaci\u00f3n retrasada por": 0.7291666666642413, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 61.72916666666424, "Persona asignada": "Kevin Jared Soria Valdes", "Desarrollador": "Brandon Arteaga Cruz", "Creada_week": "2025-02-10/2025-02-16"}, {"Resumen": "FIX: Se reporta que al querer descargar la app de Google play marca que el dispositivo no es compatible con esta versi\u00f3n", "Clave": "TVANOT-259", "Creada": "2025-03-04 00:00:00", "Actualizada": "2025-04-16 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-16 09:48:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-15 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-15 17:30:00", "Liberaci\u00f3n retrasada por": 0.7291666666642413, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 42.72916666666424, "Persona asignada": "Kevin Jared Soria Valdes", "Desarrollador": "Brandon Arteaga Cruz", "Creada_week": "2025-03-03/2025-03-09"}, {"Resumen": "FIX: Al autent\u00edcarte por \u00fanica ocasi\u00f3n se muestra cortado los acentos y las (t)s, en el dispositivo S24", "Clave": "TVANOT-260", "Creada": "2025-03-05 00:00:00", "Actualizada": "2025-04-16 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-16 09:48:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-15 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-15 17:30:00", "Liberaci\u00f3n retrasada por": 0.7291666666642413, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 41.72916666666424, "Persona asignada": "Kevin Jared Soria Valdes", "Desarrollador": "Brandon Arteaga Cruz", "Creada_week": "2025-03-03/2025-03-09"}, {"Resumen": "[WEB]-Desarrollar los CTA para el link de Autores: Solo en interiores de Notas, Videos y Galer\u00edas (5).", "Clave": "TVANOT-25", "Creada": "2024-08-08 00:00:00", "Actualizada": "2025-04-15 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-15 16:54:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-15 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-15 16:54:00", "Liberaci\u00f3n retrasada por": 0.7041666666700621, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 250.70416666667006, "Persona asignada": "Kevin Jared Soria Valdes", "Desarrollador": "", "Creada_week": "2024-08-05/2024-08-11"}, {"Resumen": "M\u00f3dulo Carrusel (revista central)", "Clave": "TVANOT-173", "Creada": "2024-12-17 00:00:00", "Actualizada": "2025-04-30 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-30 10:14:00", "Fecha Planificada de Liberaci\u00f3n": "2025-02-20 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-02-20 14:00:00", "Liberaci\u00f3n retrasada por": 0.5833333333357587, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 65.58333333333576, "Persona asignada": "Felipe Romano Rodriguez", "Desarrollador": "Felipe Romano Rodriguez", "Creada_week": "2024-12-16/2024-12-22"}, {"Resumen": "M\u00f3dulo central (Notas relacionadas)", "Clave": "TVANOT-174", "Creada": "2024-12-17 00:00:00", "Actualizada": "2025-04-30 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-30 10:14:00", "Fecha Planificada de Liberaci\u00f3n": "2025-02-20 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-02-20 14:00:00", "Liberaci\u00f3n retrasada por": 0.5833333333357587, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 65.58333333333576, "Persona asignada": "Felipe Romano Rodriguez", "Desarrollador": "", "Creada_week": "2024-12-16/2024-12-22"}, {"Resumen": "Separar schemas en p\u00e1ginas tipo video", "Clave": "TVASEO-403", "Creada": "2024-12-06 00:00:00", "Actualizada": "2025-01-27 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-01-27 12:00:00", "Fecha Planificada de Liberaci\u00f3n": "2025-01-14 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-01-14 14:00:00", "Liberaci\u00f3n retrasada por": 0.5833333333357587, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 39.58333333333576, "Persona asignada": "Maria De Los Angeles Contreras Jimenez", "Desarrollador": "Ivan Salinas Marquez", "Creada_week": "2024-12-02/2024-12-08"}, {"Resumen": "FIX: Se corta el liveplayer content ", "Clave": "TVANOT-213", "Creada": "2025-01-28 00:00:00", "Actualizada": "2025-04-30 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-30 10:12:00", "Fecha Planificada de Liberaci\u00f3n": "2025-02-20 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-02-20 14:00:00", "Liberaci\u00f3n retrasada por": 0.5833333333357587, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 23.58333333333576, "Persona asignada": "Maria Teresa Gonzalez Hernandez", "Desarrollador": "", "Creada_week": "2025-01-27/2025-02-02"}, {"Resumen": "FIX: Liveplayer in contents no funciona el boton cerrar cuando esta en un tipo de contenido liveblog", "Clave": "TVANOT-219", "Creada": "2025-02-06 00:00:00", "Actualizada": "2025-04-30 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-30 11:35:00", "Fecha Planificada de Liberaci\u00f3n": "2025-02-20 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-02-20 14:00:00", "Liberaci\u00f3n retrasada por": 0.5833333333357587, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 14.583333333335759, "Persona asignada": "Diana Ramos Martinez", "Desarrollador": "Arturo Hernandez Martinez", "Creada_week": "2025-02-03/2025-02-09"}, {"Resumen": "[NELUMBO] Cintillo Redes Sociales ", "Clave": "TVARCL-12", "Creada": "2024-08-15 00:00:00", "Actualizada": "2025-04-08 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-08-04 17:04:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-08 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-08 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 236.5625, "Persona asignada": "Diana Ramos Martinez", "Desarrollador": "Brandon Arteaga Cruz", "Creada_week": "2024-08-12/2024-08-18"}, {"Resumen": "Take Over CMS", "Clave": "TVAOPS-58", "Creada": "2024-10-07 00:00:00", "Actualizada": "2025-05-09 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-15 20:04:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-08 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-08 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 183.5625, "Persona asignada": "Sandy Yanira Ramirez Calvillo", "Desarrollador": "Ivan Josafat Chavez Marquez", "Creada_week": "2024-10-07/2024-10-13"}, {"Resumen": "Opci\u00f3n de Regionales en Barra de Navegaci\u00f3n Corporativa ", "Clave": "TVALOC-41", "Creada": "2024-12-13 00:00:00", "Actualizada": "2025-05-08 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-24 11:59:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-22 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-22 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 130.5625, "Persona asignada": "", "Desarrollador": "Omar Alejandro Quinones Alvarez", "Creada_week": "2024-12-09/2024-12-15"}, {"Resumen": "Back autores en App m\u00f3vil", "Clave": "TVANOT-179", "Creada": "2024-12-23 00:00:00", "Actualizada": "2025-04-30 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-30 11:35:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-22 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-22 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 120.5625, "Persona asignada": "Luis Fernando Ortega Chavarria", "Desarrollador": "Arturo Hernandez Martinez", "Creada_week": "2024-12-23/2024-12-29"}, {"Resumen": "Back BSP Liveblog para la app de noticias ", "Clave": "TVANOT-192", "Creada": "2025-01-06 00:00:00", "Actualizada": "2025-04-30 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-30 11:35:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-22 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-22 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 106.5625, "Persona asignada": "Maria Teresa Gonzalez Hernandez", "Desarrollador": "Gustavo Sandoval Morales", "Creada_week": "2025-01-06/2025-01-12"}, {"Resumen": "AMP header", "Clave": "TVASEO-463", "Creada": "2025-01-28 00:00:00", "Actualizada": "2025-04-23 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Liberada", "Latest Transition to Listo": "2025-04-23 09:44:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-22 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-22 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 84.5625, "Persona asignada": "Diana Ramos Martinez", "Desarrollador": "Daniel Fernando Perez Ramirez", "Creada_week": "2025-01-27/2025-02-02"}, {"Resumen": "[ZEMSANIA] El Sticky de peluches se pueda configurar su posici\u00f3n en el navegador", "Clave": "TVANOT-120", "Creada": "2024-11-07 00:00:00", "Actualizada": "2025-04-30 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-30 10:07:00", "Fecha Planificada de Liberaci\u00f3n": "2025-01-28 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-01-28 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 82.5625, "Persona asignada": "Manuel Edgar Suarez Caneda", "Desarrollador": "Alexis Mendoza Valencia", "Creada_week": "2024-11-04/2024-11-10"}, {"Resumen": "Reducci\u00f3n de c\u00f3digo JS de webview (posting liveblog) ", "Clave": "TVANOT-218", "Creada": "2025-02-05 00:00:00", "Actualizada": "2025-04-30 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-30 11:13:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-22 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-22 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 76.5625, "Persona asignada": "Diana Ramos Martinez", "Desarrollador": "Felipe Romano Rodriguez", "Creada_week": "2025-02-03/2025-02-09"}, {"Resumen": "En version AMP, cuando hay un interlink en una frase o palabra hace un espacio", "Clave": "TVANOT-199", "Creada": "2025-01-09 00:00:00", "Actualizada": "2025-04-15 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-04 17:42:00", "Fecha Planificada de Liberaci\u00f3n": "2025-03-18 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-03-18 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 68.5625, "Persona asignada": "Maria Teresa Gonzalez Hernandez", "Desarrollador": "Gustavo Sandoval Morales", "Creada_week": "2025-01-06/2025-01-12"}, {"Resumen": "Colocar el H1 en el Header de Noticias", "Clave": "TVANOT-151", "Creada": "2024-12-02 00:00:00", "Actualizada": "2025-04-30 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-30 10:08:00", "Fecha Planificada de Liberaci\u00f3n": "2025-02-04 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-02-04 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 64.5625, "Persona asignada": "Maria Teresa Gonzalez Hernandez", "Desarrollador": "Gustavo Sandoval Morales", "Creada_week": "2024-12-02/2024-12-08"}, {"Resumen": "B\u00fasqueda", "Clave": "TVASEO-520", "Creada": "2025-02-20 00:00:00", "Actualizada": "2025-04-23 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Liberada", "Latest Transition to Listo": "2025-04-23 09:44:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-22 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-22 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 61.5625, "Persona asignada": "Maria De Los Angeles Contreras Jimenez", "Desarrollador": "", "Creada_week": "2025-02-17/2025-02-23"}, {"Resumen": "HU | IM anonimo en Insider", "Clave": "TVADTA-124", "Creada": "2025-01-29 00:00:00", "Actualizada": "2025-03-31 00:00:00", "T": "Historia", "Pr": "Baja", "Estado": "Terminada", "Latest Transition to Listo": "2025-03-31 11:53:00", "Fecha Planificada de Liberaci\u00f3n": "2025-03-25 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-03-25 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 55.5625, "Persona asignada": "", "Desarrollador": "Jesus Efren Lopez Salado", "Creada_week": "2025-01-27/2025-02-02"}, {"Resumen": "FIX: El h1 en mobile no se ve correctamente. [Se coloc\u00f3 de momento un parche]", "Clave": "TVANOT-220", "Creada": "2025-02-06 00:00:00", "Actualizada": "2025-04-10 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-10-04 17:13:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-01 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-01 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 54.5625, "Persona asignada": "Diana Ramos Martinez", "Desarrollador": "Arturo Hernandez Martinez", "Creada_week": "2025-02-03/2025-02-09"}, {"Resumen": "3 Reactivar Prebid en propiedades TV Azteca - Display AMP", "Clave": "TVAOPS-119", "Creada": "2025-02-13 00:00:00", "Actualizada": "2025-04-15 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-15 20:05:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-08 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-08 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 54.5625, "Persona asignada": "Diana Ramos Martinez", "Desarrollador": "Alejandro Galindo Reyes", "Creada_week": "2025-02-10/2025-02-16"}, {"Resumen": "Se debe considerar el H1 en el header para AMP", "Clave": "TVANOT-240", "Creada": "2025-02-10 00:00:00", "Actualizada": "2025-04-10 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-10-04 17:13:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-01 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-01 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 50.5625, "Persona asignada": "Juan Carlos Teofilo Ontiveros", "Desarrollador": "Gustavo Sandoval Morales", "Creada_week": "2025-02-10/2025-02-16"}, {"Resumen": "Homologar de Ad Modules en Web y AMP", "Clave": "TVAOPS-121", "Creada": "2025-02-17 00:00:00", "Actualizada": "2025-04-11 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-11-04 17:33:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-08 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-08 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 50.5625, "Persona asignada": "Diana Ramos Martinez", "Desarrollador": "Alejandro Galindo Reyes", "Creada_week": "2025-02-17/2025-02-23"}, {"Resumen": "HU footer", "Clave": "TVASEO-456", "Creada": "2025-01-27 00:00:00", "Actualizada": "2025-05-02 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-10-04 13:07:00", "Fecha Planificada de Liberaci\u00f3n": "2025-03-18 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-03-18 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 50.5625, "Persona asignada": "Maria De Los Angeles Contreras Jimenez", "Desarrollador": "", "Creada_week": "2025-01-27/2025-02-02"}, {"Resumen": "Lista de 3 columnas", "Clave": "TVASEO-514", "Creada": "2025-02-20 00:00:00", "Actualizada": "2025-04-15 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-15 18:57:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-08 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-08 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 47.5625, "Persona asignada": "Maria De Los Angeles Contreras Jimenez", "Desarrollador": "Daniel Fernando Perez Ramirez", "Creada_week": "2025-02-17/2025-02-23"}, {"Resumen": "Contenedores", "Clave": "TVASEO-517", "Creada": "2025-02-20 00:00:00", "Actualizada": "2025-04-15 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-15 18:57:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-08 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-08 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 47.5625, "Persona asignada": "Juan Carlos Teofilo Ontiveros", "Desarrollador": "", "Creada_week": "2025-02-17/2025-02-23"}, {"Resumen": "FIX: El enlace aparece saltando una l\u00ednea e interrumpe el p\u00e1rrafo.", "Clave": "TVANOT-252", "Creada": "2025-02-25 00:00:00", "Actualizada": "2025-04-15 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-15 16:59:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-08 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-08 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 42.5625, "Persona asignada": "Kevin Jared Soria Valdes", "Desarrollador": "Brandon Arteaga Cruz", "Creada_week": "2025-02-24/2025-03-02"}, {"Resumen": "FIX: Reducir performance del liveblog en web para poder integrarlo a la app noticias", "Clave": "TVANOT-264", "Creada": "2025-03-11 00:00:00", "Actualizada": "2025-04-30 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-30 11:35:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-22 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-22 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 42.5625, "Persona asignada": "Kevin Jared Soria Valdes", "Desarrollador": "Brandon Arteaga Cruz", "Creada_week": "2025-03-10/2025-03-16"}, {"Resumen": "Video", "Clave": "TVASEO-531", "Creada": "2025-02-28 00:00:00", "Actualizada": "2025-04-15 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-15 18:57:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-08 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-08 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 39.5625, "Persona asignada": "Maria De Los Angeles Contreras Jimenez", "Desarrollador": "", "Creada_week": "2025-02-24/2025-03-02"}, {"Resumen": "Fix arbolado de contenido sin secci\u00f3n", "Clave": "TVAOPS-142", "Creada": "2025-03-24 00:00:00", "Actualizada": "2025-04-30 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-30 19:03:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-29 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-29 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 36.5625, "Persona asignada": "Sandy Yanira Ramirez Calvillo", "Desarrollador": "Juan Camilo Camacho Beltran", "Creada_week": "2025-03-24/2025-03-30"}, {"Resumen": "Peluche", "Clave": "TVASEO-534", "Creada": "2025-03-03 00:00:00", "Actualizada": "2025-04-15 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-15 18:58:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-08 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-08 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 36.5625, "Persona asignada": "Maria De Los Angeles Contreras Jimenez", "Desarrollador": "Juan Camilo Camacho Beltran", "Creada_week": "2025-03-03/2025-03-09"}, {"Resumen": "HU | Cuestionarios tapan box banner", "Clave": "TVADTA-139", "Creada": "2025-02-19 00:00:00", "Actualizada": "2025-03-31 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Terminada", "Latest Transition to Listo": "2025-03-31 11:53:00", "Fecha Planificada de Liberaci\u00f3n": "2025-03-25 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-03-25 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 34.5625, "Persona asignada": "Maria De Los Angeles Contreras Jimenez", "Desarrollador": "Jesus Efren Lopez Salado", "Creada_week": "2025-02-17/2025-02-23"}, {"Resumen": "Archivo RSS", "Clave": "TVANOT-271", "Creada": "2025-03-26 00:00:00", "Actualizada": "2025-04-30 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-30 11:42:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-29 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-29 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 34.5625, "Persona asignada": "Manuel Edgar Suarez Caneda", "Desarrollador": "Brandon Arteaga Cruz", "Creada_week": "2025-03-24/2025-03-30"}, {"Resumen": "No se ven cr\u00e9ditos de las im\u00e1genes en las galer\u00edas", "Clave": "TVALOG-39", "Creada": "2025-03-07 00:00:00", "Actualizada": "2025-04-08 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Liberada", "Latest Transition to Listo": "2025-08-04 16:41:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-08 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-08 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 32.5625, "Persona asignada": "Manuel Edgar Suarez Caneda", "Desarrollador": "", "Creada_week": "2025-03-03/2025-03-09"}, {"Resumen": "Crear un nuevo headline con el estilo (icono azul + color del t\u00edtulo)", "Clave": "TVANOT-247", "Creada": "2025-02-19 00:00:00", "Actualizada": "2025-04-08 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-04 17:38:00", "Fecha Planificada de Liberaci\u00f3n": "2025-03-18 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-03-18 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 27.5625, "Persona asignada": "Kevin Jared Soria Valdes", "Desarrollador": "Brandon Arteaga Cruz", "Creada_week": "2025-02-17/2025-02-23"}, {"Resumen": "M\u00f3dulo imagen principal a la derecha", "Clave": "TVANOT-249", "Creada": "2025-02-19 00:00:00", "Actualizada": "2025-04-23 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-04 17:41:00", "Fecha Planificada de Liberaci\u00f3n": "2025-03-18 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-03-18 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 27.5625, "Persona asignada": "Kevin Jared Soria Valdes", "Desarrollador": "Jesus Pineda Velazquez", "Creada_week": "2025-02-17/2025-02-23"}, {"Resumen": "Reajustar el look and feel de los m\u00f3dulos entregados en el 2024 para el home", "Clave": "TVANOT-250", "Creada": "2025-02-19 00:00:00", "Actualizada": "2025-04-23 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-04 17:39:00", "Fecha Planificada de Liberaci\u00f3n": "2025-03-18 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-03-18 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 27.5625, "Persona asignada": "Kevin Jared Soria Valdes", "Desarrollador": "Brandon Arteaga Cruz", "Creada_week": "2025-02-17/2025-02-23"}, {"Resumen": "Reajustar el look and feel de los m\u00f3dulos del home que se encuentran actualmente en producci\u00f3n ", "Clave": "TVANOT-251", "Creada": "2025-02-19 00:00:00", "Actualizada": "2025-04-23 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-04 17:39:00", "Fecha Planificada de Liberaci\u00f3n": "2025-03-18 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-03-18 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 27.5625, "Persona asignada": "Kevin Jared Soria Valdes", "Desarrollador": "Brandon Arteaga Cruz", "Creada_week": "2025-02-17/2025-02-23"}, {"Resumen": "Observaciones de QA y cambio de color por el usuario (para quitar parche)", "Clave": "TVANOT-265", "Creada": "2025-03-12 00:00:00", "Actualizada": "2025-04-15 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-15 16:59:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-08 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-08 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 27.5625, "Persona asignada": "Kevin Jared Soria Valdes", "Desarrollador": "Brandon Arteaga Cruz", "Creada_week": "2025-03-10/2025-03-16"}, {"Resumen": "Minificaci\u00f3n de scripts de proveedores de login en todos los temas", "Clave": "TVADTA-183", "Creada": "2025-03-31 00:00:00", "Actualizada": "2025-05-07 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Terminada", "Latest Transition to Listo": "2025-07-05 09:17:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-22 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-22 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 22.5625, "Persona asignada": "Eduardo Pina Diaz", "Desarrollador": "Jose Jesus Tirado Perez", "Creada_week": "2025-03-31/2025-04-06"}, {"Resumen": "Se requiere colocar el mismo tama\u00f1o de letra en los tipos de contenido Liveblog, Galer\u00eda, Video, En vivo, como se realiz\u00f3 en Notas", "Clave": "TVANOT-197", "Creada": "2025-01-07 00:00:00", "Actualizada": "2025-04-30 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-30 10:08:00", "Fecha Planificada de Liberaci\u00f3n": "2025-01-28 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-01-28 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 21.5625, "Persona asignada": "Alejandro Galindo Reyes", "Desarrollador": "Alejandro Galindo Reyes", "Creada_week": "2025-01-06/2025-01-12"}, {"Resumen": "Se debe de colocar un espacio entre el header y el primero m\u00f3dulo + del primer m\u00f3dulo al podcaste", "Clave": "TVANOT-201", "Creada": "2025-01-14 00:00:00", "Actualizada": "2025-04-30 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-30 10:11:00", "Fecha Planificada de Liberaci\u00f3n": "2025-02-04 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-02-04 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 21.5625, "Persona asignada": "Maria Teresa Gonzalez Hernandez", "Desarrollador": "", "Creada_week": "2025-01-13/2025-01-19"}, {"Resumen": "Mejoras de c\u00f3digo consecuencia de an\u00e1lisis de error de Marfeel", "Clave": "TVANOT-273", "Creada": "2025-04-01 00:00:00", "Actualizada": "2025-04-30 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-30 11:13:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-22 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-22 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 21.5625, "Persona asignada": "Diana Ramos Martinez", "Desarrollador": "Alexis Mendoza Valencia", "Creada_week": "2025-03-31/2025-04-06"}, {"Resumen": "Implementaci\u00f3n de Liveblog - Arena AMP", "Clave": "TVASEO-444", "Creada": "2025-01-22 00:00:00", "Actualizada": "2025-02-19 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-02-19 13:07:00", "Fecha Planificada de Liberaci\u00f3n": "2025-02-11 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-02-11 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 20.5625, "Persona asignada": "Ivan Salinas Marquez", "Desarrollador": "Ivan Salinas Marquez", "Creada_week": "2025-01-20/2025-01-26"}, {"Resumen": "Fix resoluci\u00f3n AMP Leaderboard", "Clave": "TVAOPS-141", "Creada": "2025-03-24 00:00:00", "Actualizada": "2025-04-11 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-11-04 17:32:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-08 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-08 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 15.5625, "Persona asignada": "Sandy Yanira Ramirez Calvillo", "Desarrollador": "Jose Jesus Tirado Perez", "Creada_week": "2025-03-24/2025-03-30"}, {"Resumen": "Fix arbolado de contenido sin secci\u00f3n /", "Clave": "TVAOPS-155", "Creada": "2025-04-14 00:00:00", "Actualizada": "2025-04-30 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-30 19:03:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-29 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-29 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 15.5625, "Persona asignada": "Eva Lizbeth Espinosa Vazquez", "Desarrollador": "Jose Jesus Tirado Perez", "Creada_week": "2025-04-14/2025-04-20"}, {"Resumen": "FIX: Se debe de quitar el parche en opinion FIA por que aparece el prefijo &quot;Por&quot;", "Clave": "TVANOT-268", "Creada": "2025-03-19 00:00:00", "Actualizada": "2025-04-10 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-10-04 17:13:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-01 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-01 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 13.5625, "Persona asignada": "Kevin Jared Soria Valdes", "Desarrollador": "", "Creada_week": "2025-03-17/2025-03-23"}, {"Resumen": "Fix Preview video en CMS - Prebid", "Clave": "TVAOPS-151", "Creada": "2025-04-09 00:00:00", "Actualizada": "2025-04-30 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-30 19:02:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-22 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-22 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 13.5625, "Persona asignada": "Sandy Yanira Ramirez Calvillo", "Desarrollador": "Nestor Jesus Real Estrada", "Creada_week": "2025-04-07/2025-04-13"}, {"Resumen": "Fix: mostrar el switch de lazyload para las listas en CMS", "Clave": "TVANOT-257", "Creada": "2025-02-28 00:00:00", "Actualizada": "2025-04-15 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-15 17:00:00", "Fecha Planificada de Liberaci\u00f3n": "2025-03-11 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-03-11 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 11.5625, "Persona asignada": "Kevin Jared Soria Valdes", "Desarrollador": "Brandon Arteaga Cruz", "Creada_week": "2025-02-24/2025-03-02"}, {"Resumen": "Fix - cambio de hash Flowcards AMP", "Clave": "TVASEO-572", "Creada": "2025-03-31 00:00:00", "Actualizada": "2025-04-15 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-15 18:57:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-08 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-08 13:30:00", "Liberaci\u00f3n retrasada por": 0.5625, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 8.5625, "Persona asignada": "Juan Camilo Camacho Beltran", "Desarrollador": "Juan Camilo Camacho Beltran", "Creada_week": "2025-03-31/2025-04-06"}, {"Resumen": "FIX: 28 Paginas en AMP", "Clave": "TVANOT-184", "Creada": "2024-12-24 00:00:00", "Actualizada": "2025-04-30 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-30 10:07:00", "Fecha Planificada de Liberaci\u00f3n": "2025-01-07 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-01-07 13:24:00", "Liberaci\u00f3n retrasada por": 0.5583333333343035, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 14.558333333334303, "Persona asignada": "Maria Teresa Gonzalez Hernandez", "Desarrollador": "Arturo Hernandez Martinez", "Creada_week": "2024-12-23/2024-12-29"}, {"Resumen": "Refactorizaci\u00f3n c\u00f3digo App iOS", "Clave": "TVANOT-217", "Creada": "2025-02-04 00:00:00", "Actualizada": "2025-05-12 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-12-05 13:22:00", "Fecha Planificada de Liberaci\u00f3n": "2025-05-12 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-05-12 13:22:00", "Liberaci\u00f3n retrasada por": 0.5569444444408873, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 97.55694444444089, "Persona asignada": "Diana Ramos Martinez", "Desarrollador": "Felipe Romano Rodriguez", "Creada_week": "2025-02-03/2025-02-09"}, {"Resumen": "Take Over CMS - Separaci\u00f3n de archivos", "Clave": "TVAOPS-147", "Creada": "2025-04-02 00:00:00", "Actualizada": "2025-04-15 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-15 20:04:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-15 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-15 13:15:00", "Liberaci\u00f3n retrasada por": 0.5520833333357587, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 13.552083333335759, "Persona asignada": "Sandy Yanira Ramirez Calvillo", "Desarrollador": "Alejandro Galindo Reyes", "Creada_week": "2025-03-31/2025-04-06"}, {"Resumen": "HU Listas", "Clave": "TVASEO-465", "Creada": "2025-01-28 00:00:00", "Actualizada": "2025-05-02 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-16 13:02:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-08 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-08 13:03:00", "Liberaci\u00f3n retrasada por": 0.5437499999970896, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 70.54374999999709, "Persona asignada": "Diana Ramos Martinez", "Desarrollador": "Juan Camilo Camacho Beltran", "Creada_week": "2025-01-27/2025-02-02"}, {"Resumen": "Figma redise\u00f1o de dashboard", "Clave": "TVADTA-164", "Creada": "2025-03-19 00:00:00", "Actualizada": "2025-04-29 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-03-04 12:59:00", "Fecha Planificada de Liberaci\u00f3n": "2025-03-21 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-03-21 12:59:00", "Liberaci\u00f3n retrasada por": 0.5409722222248092, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 2.5409722222248092, "Persona asignada": "Eduardo Pina Diaz", "Desarrollador": "Luis Cabrera Rivera", "Creada_week": "2025-03-17/2025-03-23"}, {"Resumen": "2 Reactivar Prebid en propiedades TV Azteca - Video WEB", "Clave": "TVAOPS-118", "Creada": "2025-02-13 00:00:00", "Actualizada": "2025-04-21 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-15 20:04:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-01 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-01 12:46:00", "Liberaci\u00f3n retrasada por": 0.5319444444467081, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 47.53194444444671, "Persona asignada": "Sandy Yanira Ramirez Calvillo", "Desarrollador": "Ivan Josafat Chavez Marquez", "Creada_week": "2025-02-10/2025-02-16"}, {"Resumen": "FIX: La barra de navegaci\u00f3n se ve muy arriba a comparaci\u00f3n del resto de los sitios", "Clave": "TVANOT-269", "Creada": "2025-03-20 00:00:00", "Actualizada": "2025-04-23 00:00:00", "T": "Historia", "Pr": "Baja", "Estado": "Terminada", "Latest Transition to Listo": "2025-07-04 10:41:00", "Fecha Planificada de Liberaci\u00f3n": "2025-03-20 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-03-20 12:24:00", "Liberaci\u00f3n retrasada por": 0.5166666666700621, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 0.5166666666700621, "Persona asignada": "Diana Ramos Martinez", "Desarrollador": "Alexis Mendoza Valencia", "Creada_week": "2025-03-17/2025-03-23"}, {"Resumen": "Fix Teads AMP", "Clave": "TVAOPS-127", "Creada": "2025-02-25 00:00:00", "Actualizada": "2025-03-10 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-10-03 12:17:00", "Fecha Planificada de Liberaci\u00f3n": "2025-02-27 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-02-27 11:53:00", "Liberaci\u00f3n retrasada por": 0.4951388888875954, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 2.4951388888875954, "Persona asignada": "Sandy Yanira Ramirez Calvillo", "Desarrollador": "Juan Camilo Camacho Beltran", "Creada_week": "2025-02-24/2025-03-02"}, {"Resumen": "M\u00f3dulo opinion FIA (reajuste look and feel)", "Clave": "TVANOT-248", "Creada": "2025-02-19 00:00:00", "Actualizada": "2025-04-23 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-04 17:40:00", "Fecha Planificada de Liberaci\u00f3n": "2025-03-18 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-03-18 11:29:00", "Liberaci\u00f3n retrasada por": 0.47847222222480923, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 27.47847222222481, "Persona asignada": "Brandon Arteaga Cruz", "Desarrollador": "", "Creada_week": "2025-02-17/2025-02-23"}, {"Resumen": "Liveblog", "Clave": "TVASEO-535", "Creada": "2025-03-03 00:00:00", "Actualizada": "2025-04-15 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-15 18:58:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-08 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-08 11:00:00", "Liberaci\u00f3n retrasada por": 0.45833333333575865, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 36.45833333333576, "Persona asignada": "Maria De Los Angeles Contreras Jimenez", "Desarrollador": "Sinuhe Jardinez Hernandez", "Creada_week": "2025-03-03/2025-03-09"}, {"Resumen": "Implementaci\u00f3n text to speech para notas -iOS", "Clave": "TVADEP-27", "Creada": "2024-08-14 00:00:00", "Actualizada": "2025-04-10 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Terminada", "Latest Transition to Listo": "2025-10-04 18:07:00", "Fecha Planificada de Liberaci\u00f3n": "2025-03-12 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-03-12 10:59:00", "Liberaci\u00f3n retrasada por": 0.4576388888890506, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 210.45763888888905, "Persona asignada": "Maria De Los Angeles Contreras Jimenez", "Desarrollador": "Jesus Efren Lopez Salado", "Creada_week": "2024-08-12/2024-08-18"}, {"Resumen": "Ajuste L\u00edmite Sitemaps", "Clave": "TVASEO-528", "Creada": "2025-02-25 00:00:00", "Actualizada": "2025-03-13 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-10-03 12:19:00", "Fecha Planificada de Liberaci\u00f3n": "2025-02-27 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-02-27 10:36:00", "Liberaci\u00f3n retrasada por": 0.44166666666569654, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 2.4416666666656965, "Persona asignada": "Maria De Los Angeles Contreras Jimenez", "Desarrollador": "Daniel Fernando Perez Ramirez", "Creada_week": "2025-02-24/2025-03-02"}, {"Resumen": "Personalizaci\u00f3n trackeo tag Total Play", "Clave": "TVADTA-198", "Creada": "2025-04-03 00:00:00", "Actualizada": "2025-04-08 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-08-04 10:26:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-08 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-08 10:23:00", "Liberaci\u00f3n retrasada por": 0.4326388888875954, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 5.432638888887595, "Persona asignada": "Eduardo Pina Diaz", "Desarrollador": "Ezequiel De Jesus Gabriel", "Creada_week": "2025-03-31/2025-04-06"}, {"Resumen": "Deeplinking roku search episode", "Clave": "TVAENT-456", "Creada": "2025-03-05 00:00:00", "Actualizada": "2025-04-23 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-23 09:54:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-28 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-22 13:30:00", "Liberaci\u00f3n retrasada por": 0.0, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 48.5625, "Persona asignada": "Joaquin Enrique Gudino Lemus", "Desarrollador": "Luis Ramos Flores", "Creada_week": "2025-03-03/2025-03-09"}, {"Resumen": "FIX: Se debe colocar el tama\u00f1o de letra y alineaci\u00f3n que se muestra en el figma para el cintillo de redes sociales.", "Clave": "TVARCL-64", "Creada": "2025-03-06 00:00:00", "Actualizada": "2025-04-11 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Terminada", "Latest Transition to Listo": "2025-11-04 17:32:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-15 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-08 17:32:00", "Liberaci\u00f3n retrasada por": 0.0, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 33.73055555555766, "Persona asignada": "", "Desarrollador": "", "Creada_week": "2025-03-03/2025-03-09"}, {"Resumen": "1 Reactivar Prebid en propiedades TV Azteca - Display WEB", "Clave": "TVAOPS-117", "Creada": "2025-02-07 00:00:00", "Actualizada": "2025-04-15 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-15 20:04:00", "Fecha Planificada de Liberaci\u00f3n": "2025-03-11 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-03-04 13:30:00", "Liberaci\u00f3n retrasada por": 0.0, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 25.5625, "Persona asignada": "Luis Antonio Pena Cornejo", "Desarrollador": "Ivan Josafat Chavez Marquez", "Creada_week": "2025-02-03/2025-02-09"}, {"Resumen": "Agregar campo section para m\u00e9tricas Roku", "Clave": "TVAENT-501", "Creada": "2025-03-31 00:00:00", "Actualizada": "2025-04-23 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-23 09:55:00", "Fecha Planificada de Liberaci\u00f3n": "2025-05-30 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-22 13:30:00", "Liberaci\u00f3n retrasada por": 0.0, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 22.5625, "Persona asignada": "Edgar Luna Arreguin", "Desarrollador": "David Perez Carrillo", "Creada_week": "2025-03-31/2025-04-06"}, {"Resumen": "Minificaci\u00f3n HTML Default header", "Clave": "TVASEO-573", "Creada": "2025-04-01 00:00:00", "Actualizada": "2025-04-15 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-15 18:58:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-22 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-15 13:15:00", "Liberaci\u00f3n retrasada por": 0.0, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 14.552083333335759, "Persona asignada": "Maria De Los Angeles Contreras Jimenez", "Desarrollador": "", "Creada_week": "2025-03-31/2025-04-06"}, {"Resumen": "Minificaci\u00f3n HTML Default head", "Clave": "TVASEO-575", "Creada": "2025-04-01 00:00:00", "Actualizada": "2025-04-15 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-15 18:58:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-22 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-15 13:15:00", "Liberaci\u00f3n retrasada por": 0.0, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 14.552083333335759, "Persona asignada": "Maria De Los Angeles Contreras Jimenez", "Desarrollador": "Daniel Fernando Perez Ramirez", "Creada_week": "2025-03-31/2025-04-06"}, {"Resumen": "Minificaci\u00f3n HTML Default En vivo Aside", "Clave": "TVASEO-578", "Creada": "2025-04-03 00:00:00", "Actualizada": "2025-04-15 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Estabilizaci\u00f3n", "Latest Transition to Listo": "2025-04-15 18:58:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-22 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-04-15 13:15:00", "Liberaci\u00f3n retrasada por": 0.0, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 12.552083333335759, "Persona asignada": "Maria De Los Angeles Contreras Jimenez", "Desarrollador": "Daniel Fernando Perez Ramirez", "Creada_week": "2025-03-31/2025-04-06"}, {"Resumen": "Agregar virgulilla en cuerpo de notas Azteca Noticias", "Clave": "TVASEO-442", "Creada": "2025-01-20 00:00:00", "Actualizada": "2025-02-04 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-02 13:31:00", "Fecha Planificada de Liberaci\u00f3n": "2025-02-04 00:00:00", "Fecha Real de Liberaci\u00f3n": "2025-01-28 13:30:00", "Liberaci\u00f3n retrasada por": 0.0, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 8.5625, "Persona asignada": "", "Desarrollador": "", "Creada_week": "2025-01-20/2025-01-26"}, {"Resumen": "Servicio de Notas Algor\u00edtmicas no responde", "Clave": "TVADEP-161", "Creada": "2025-03-10 00:00:00", "Actualizada": "2025-04-10 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-10-04 19:04:00", "Fecha Planificada de Liberaci\u00f3n": "2025-03-18 00:00:00", "Fecha Real de Liberaci\u00f3n": "", "Liberaci\u00f3n retrasada por": 0.0, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 0.0, "Persona asignada": "Ariel De Coninck Bahamondes", "Desarrollador": "Janette Cerecedo Ruiz", "Creada_week": "2025-03-10/2025-03-16"}, {"Resumen": "Agregar campo &quot;Tipo de formulario&quot;", "Clave": "TVADTA-147", "Creada": "2025-03-03 00:00:00", "Actualizada": "2025-04-10 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-10-04 16:46:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-29 00:00:00", "Fecha Real de Liberaci\u00f3n": "", "Liberaci\u00f3n retrasada por": 0.0, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 0.0, "Persona asignada": "Diana Ramos Martinez", "Desarrollador": "Janette Cerecedo Ruiz", "Creada_week": "2025-03-03/2025-03-09"}, {"Resumen": "Perfiles de usuario (Roles y permisos)", "Clave": "TVADTA-149", "Creada": "2025-03-03 00:00:00", "Actualizada": "2025-04-28 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-28 15:48:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-29 00:00:00", "Fecha Real de Liberaci\u00f3n": "", "Liberaci\u00f3n retrasada por": 0.0, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 0.0, "Persona asignada": "Maria De Los Angeles Contreras Jimenez", "Desarrollador": "", "Creada_week": "2025-03-03/2025-03-09"}, {"Resumen": "Tag tracking TotalPlay", "Clave": "TVADTA-159", "Creada": "2025-03-13 00:00:00", "Actualizada": "2025-03-14 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Terminada", "Latest Transition to Listo": "2025-03-14 13:07:00", "Fecha Planificada de Liberaci\u00f3n": "2025-03-14 00:00:00", "Fecha Real de Liberaci\u00f3n": "", "Liberaci\u00f3n retrasada por": 0.0, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 0.0, "Persona asignada": "Alejandro Galindo Reyes", "Desarrollador": "Alejandro Galindo Reyes", "Creada_week": "2025-03-10/2025-03-16"}, {"Resumen": "Preguntas tapan pre-roll y transmisi\u00f3n (Android)", "Clave": "TVADTA-162", "Creada": "2025-03-14 00:00:00", "Actualizada": "2025-04-14 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-14 16:48:00", "Fecha Planificada de Liberaci\u00f3n": "2025-03-19 00:00:00", "Fecha Real de Liberaci\u00f3n": "", "Liberaci\u00f3n retrasada por": 0.0, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 0.0, "Persona asignada": "Javier Ortega Leal", "Desarrollador": "Javier Ortega Leal", "Creada_week": "2025-03-10/2025-03-16"}, {"Resumen": "Preguntas tapan pre-roll y transmisi\u00f3n (iOS)", "Clave": "TVADTA-163", "Creada": "2025-03-14 00:00:00", "Actualizada": "2025-04-14 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-04-14 16:47:00", "Fecha Planificada de Liberaci\u00f3n": "2025-03-19 00:00:00", "Fecha Real de Liberaci\u00f3n": "", "Liberaci\u00f3n retrasada por": 0.0, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 0.0, "Persona asignada": "Eduardo Pina Diaz", "Desarrollador": "", "Creada_week": "2025-03-10/2025-03-16"}, {"Resumen": "Login FB-Deportes Android", "Clave": "TVADTA-43", "Creada": "2024-09-11 00:00:00", "Actualizada": "2025-01-28 00:00:00", "T": "Historia", "Pr": "Media", "Estado": "Terminada", "Latest Transition to Listo": "2025-01-28 14:12:00", "Fecha Planificada de Liberaci\u00f3n": "2024-09-27 00:00:00", "Fecha Real de Liberaci\u00f3n": "", "Liberaci\u00f3n retrasada por": 0.0, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 0.0, "Persona asignada": "Eduardo Pina Diaz", "Desarrollador": "Alejandro Galindo Reyes", "Creada_week": "2024-09-09/2024-09-15"}, {"Resumen": "M\u00f3dulo recomendados", "Clave": "TVAENT-180", "Creada": "2024-10-16 00:00:00", "Actualizada": "2025-04-30 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Liberada", "Latest Transition to Listo": "2025-04-30 16:29:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-18 00:00:00", "Fecha Real de Liberaci\u00f3n": "", "Liberaci\u00f3n retrasada por": 0.0, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 0.0, "Persona asignada": "Jonathan Hernandez Gonzalez", "Desarrollador": "Jonathan Hernandez Gonzalez", "Creada_week": "2024-10-14/2024-10-20"}, {"Resumen": "Correo Elektra 20 a\u00f1os", "Clave": "TVAENT-197", "Creada": "2024-11-05 00:00:00", "Actualizada": "2025-03-14 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-03-14 11:57:00", "Fecha Planificada de Liberaci\u00f3n": "2024-08-23 00:00:00", "Fecha Real de Liberaci\u00f3n": "", "Liberaci\u00f3n retrasada por": 0.0, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 0.0, "Persona asignada": "Jose Jesus Tirado Perez", "Desarrollador": "Jose Jesus Tirado Perez", "Creada_week": "2024-11-04/2024-11-10"}, {"Resumen": "Correo prueba transmisiones TV Azteca", "Clave": "TVAENT-212", "Creada": "2024-11-19 00:00:00", "Actualizada": "2025-03-14 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-03-14 11:54:00", "Fecha Planificada de Liberaci\u00f3n": "2024-08-23 00:00:00", "Fecha Real de Liberaci\u00f3n": "", "Liberaci\u00f3n retrasada por": 0.0, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 0.0, "Persona asignada": "Eduardo Pina Diaz", "Desarrollador": "Jose Jesus Tirado Perez", "Creada_week": "2024-11-18/2024-11-24"}, {"Resumen": "M\u00e9tricas login", "Clave": "TVAENT-336", "Creada": "2025-01-15 00:00:00", "Actualizada": "2025-04-30 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Liberada", "Latest Transition to Listo": "2025-04-30 16:29:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-18 00:00:00", "Fecha Real de Liberaci\u00f3n": "", "Liberaci\u00f3n retrasada por": 0.0, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 0.0, "Persona asignada": "Eduardo Pina Diaz", "Desarrollador": "Alejandro Galindo Reyes", "Creada_week": "2025-01-13/2025-01-19"}, {"Resumen": "M\u00e9tricas reestructura", "Clave": "TVAENT-337", "Creada": "2025-01-15 00:00:00", "Actualizada": "2025-04-30 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Liberada", "Latest Transition to Listo": "2025-04-30 16:29:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-18 00:00:00", "Fecha Real de Liberaci\u00f3n": "", "Liberaci\u00f3n retrasada por": 0.0, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 0.0, "Persona asignada": "Eduardo Pina Diaz", "Desarrollador": "Alejandro Galindo Reyes", "Creada_week": "2025-01-13/2025-01-19"}, {"Resumen": "M\u00e9tricas", "Clave": "TVAENT-401", "Creada": "2025-01-31 00:00:00", "Actualizada": "2025-04-30 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Liberada", "Latest Transition to Listo": "2025-04-30 16:29:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-18 00:00:00", "Fecha Real de Liberaci\u00f3n": "", "Liberaci\u00f3n retrasada por": 0.0, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 0.0, "Persona asignada": "Teresita Del Nino Jesus Gonzalez Guillen", "Desarrollador": "Ricardo Yael Zuniga Vazquez", "Creada_week": "2025-01-27/2025-02-02"}, {"Resumen": "M\u00e9tricas", "Clave": "TVAENT-402", "Creada": "2025-01-31 00:00:00", "Actualizada": "2025-04-30 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Liberada", "Latest Transition to Listo": "2025-04-30 16:41:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-18 00:00:00", "Fecha Real de Liberaci\u00f3n": "", "Liberaci\u00f3n retrasada por": 0.0, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 0.0, "Persona asignada": "Joaquin Enrique Gudino Lemus", "Desarrollador": "", "Creada_week": "2025-01-27/2025-02-02"}, {"Resumen": "Ads, Home TVA", "Clave": "TVAENT-503", "Creada": "2025-03-31 00:00:00", "Actualizada": "2025-05-07 00:00:00", "T": "Historia", "Pr": "Alta", "Estado": "Terminada", "Latest Transition to Listo": "2025-07-05 09:54:00", "Fecha Planificada de Liberaci\u00f3n": "2025-04-18 00:00:00", "Fecha Real de Liberaci\u00f3n": "", "Liberaci\u00f3n retrasada por": 0.0, "Estado Desarrollo > 30 d\u00edas": 0.0, "Desarrollo y liberada > 60 D\u00edas": 0.0, "Persona asignada": "Guillermo Daniel Valdez Villa", "Desarrollador": "Guillermo Daniel Valdez Villa", "Creada_week": "2025-03-31/2025-04-06"}]`);
+        let currentData = originalData;
+
+        // Function to calculate metrics from a given dataset
+        function calculateMetrics(data) {
+            const total_csrs = data.length;
+
+            // Handle potential non-numeric values in 'Liberación retrasada por'
+            const delayValues = data.map(d => parseFloat(d['Liberación retrasada por']) || 0);
+            const validDelays = delayValues.filter(d => !isNaN(d) && isFinite(d));
+            const avg_delay = validDelays.length > 0 ? validDelays.reduce((a, b) => a + b, 0) / validDelays.length : 0;
+            const pct_late = total_csrs > 0 ? (delayValues.filter(d => d > 0).length / total_csrs) * 100 : 0;
+            const max_delay = validDelays.length > 0 ? Math.max(...validDelays) : 0;
+            const min_delay = validDelays.length > 0 ? Math.min(...validDelays) : 0;
+
+            const dev30Values = data.map(d => parseFloat(d['Estado Desarrollo > 30 días']) || 0);
+            const validDev30 = dev30Values.filter(d => !isNaN(d) && isFinite(d));
+            const avg_dev_gt30 = validDev30.length > 0 ? validDev30.reduce((a, b) => a + b, 0) / validDev30.length : 0;
+            const num_dev_gt30 = dev30Values.filter(d => d > 0).length;
+
+            const dev60Values = data.map(d => parseFloat(d['Desarrollo y liberada > 60 Días']) || 0);
+            const validDev60 = dev60Values.filter(d => !isNaN(d) && isFinite(d));
+            const avg_devlib_gt60 = validDev60.length > 0 ? validDev60.reduce((a, b) => a + b, 0) / validDev60.length : 0;
+            const num_devlib_gt60 = dev60Values.filter(d => d > 0).length;
+
+            // Grouped data
+            function getCounts(arr, key) {
+                return arr.reduce((acc, obj) => {
+                    const val = obj[key];
+                    if (val) acc[val] = (acc[val] || 0) + 1;
+                    return acc;
+                }, {});
+            }
+
+            function getAvgDelay(arr, key) {
+                const groups = arr.reduce((acc, obj) => {
+                    const val = obj[key];
+                    // Ensure 'Liberación retrasada por' is treated as a number
+                    const delay = parseFloat(obj['Liberación retrasada por']) || 0;
+                    if (val) {
+                        if (!acc[val]) acc[val] = { sum: 0, count: 0 };
+                        acc[val].sum += delay;
+                        acc[val].count += 1;
+                    }
+                    return acc;
+                }, {});
+                const result = {};
+                for (const k in groups) {
+                    result[k] = groups[k].sum / groups[k].count;
+                }
+                return Object.fromEntries(Object.entries(result).sort(([, a], [, b]) => b - a)); // Sort descending
+            }
+
+            const by_estado = getCounts(data, 'Estado');
+            const by_pr = getCounts(data, 'Pr');
+            const by_tipo = getCounts(data, 'T');
+            const by_persona = getCounts(data, 'Persona asignada');
+            const by_dev = getCounts(data, 'Desarrollador');
+
+            const delay_by_persona = getAvgDelay(data, 'Persona asignada');
+            const delay_by_dev = getAvgDelay(data, 'Desarrollador');
+
+            // Time series
+            function getTrend(arr, dateKey) {
+                const trend = arr.reduce((acc, obj) => {
+                    const dateStr = obj[dateKey];
+                    if (dateStr) {
+                        const date = new Date(dateStr);
+                        // Get week string (YYYY-WW)
+                        const year = date.getFullYear();
+                        const firstDayOfYear = new Date(year, 0, 1);
+                        // Calculate day of the year (0-indexed)
+                        const dayOfYear = (date - firstDayOfYear) / (24 * 60 * 60 * 1000);
+                        // Week number (1-indexed, starting from Monday as first day of week)
+                        const week = Math.ceil((dayOfYear + firstDayOfYear.getDay() + 1) / 7);
+                        const weekStr = `${year}-W${String(week).padStart(2, '0')}`;
+                        acc[weekStr] = (acc[weekStr] || 0) + 1;
+                    }
+                    return acc;
+                }, {});
+                return Object.fromEntries(Object.entries(trend).sort()); // Sort by week string
+            }
+
+            const created_trend = getTrend(data, 'Creada');
+            const resolved_trend = getTrend(data, 'Fecha Real de Liberación');
+
+            // Top 10 tables
+            function getTop10(arr, sortKey) {
+                if (!sortKey || !arr || arr.length === 0) return [];
+                const sorted = [...arr].sort((a, b) => (parseFloat(b[sortKey]) || 0) - (parseFloat(a[sortKey]) || 0));
+                return sorted.slice(0, 10).map(d => ({
+                    Resumen: d.Resumen,
+                    Clave: d.Clave,
+                    [sortKey]: d[sortKey],
+                    'Persona asignada': d['Persona asignada'],
+                    'Desarrollador': d['Desarrollador']
+                }));
+            }
+
+            const top_late = getTop10(data, 'Liberación retrasada por');
+            const top_dev_gt30 = getTop10(data, 'Estado Desarrollo > 30 días');
+            const top_devlib_gt60 = getTop10(data, 'Desarrollo y liberada > 60 Días');
+
+            return {
+                total_csrs,
+                avg_delay: avg_delay,
+                pct_late,
+                avg_dev_gt30,
+                num_dev_gt30,
+                avg_devlib_gt60,
+                num_devlib_gt60,
+                max_delay,
+                min_delay,
+                by_estado,
+                by_pr,
+                by_tipo,
+                by_persona,
+                by_dev,
+                delay_by_persona,
+                delay_by_dev,
+                created_trend,
+                resolved_trend,
+                top_late,
+                top_dev_gt30,
+                top_devlib_gt60,
+            };
+        }
+
+        // Function to update the dashboard with new metrics
+        function updateDashboard(metrics) {
+            // Update KPIs
+            document.getElementById('kpiTotalCSRs').innerText = metrics.total_csrs;
+            document.getElementById('kpiAvgDelay').innerText = metrics.avg_delay.toFixed(1);
+            document.getElementById('kpiPctLate').innerText = metrics.pct_late.toFixed(1) + '%';
+            document.getElementById('kpiNumDevGT30').innerText = metrics.num_dev_gt30;
+            document.getElementById('kpiNumDevLibGT60').innerText = metrics.num_devlib_gt60;
+            document.getElementById('kpiMaxDelay').innerText = metrics.max_delay.toFixed(1);
+            document.getElementById('kpiMinDelay').innerText = metrics.min_delay.toFixed(1);
+
+            // Update Pie Charts
+            Plotly.react('estadoPie', [{labels: Object.keys(metrics.by_estado), values: Object.values(metrics.by_estado), type: 'pie', hole: .5, textinfo: 'label+percent', marker: {colors: ['#6a82fb', '#fc5c7d', '#4CAF50', '#FFC107', '#2196F3', '#FF5722']}}], {title: 'Estado', height: 350});
+            Plotly.react('prPie', [{labels: Object.keys(metrics.by_pr), values: Object.values(metrics.by_pr), type: 'pie', hole: .5, textinfo: 'label+percent', marker: {colors: ['#6a82fb', '#fc5c7d', '#4CAF50', '#FFC107', '#2196F3', '#FF5722']}}], {title: 'Prioridad', height: 350});
+            Plotly.react('tipoPie', [{labels: Object.keys(metrics.by_tipo), values: Object.values(metrics.by_tipo), type: 'pie', hole: .5, textinfo: 'label+percent', marker: {colors: ['#6a82fb', '#fc5c7d', '#4CAF50', '#FFC107', '#2196F3', '#FF5722']}}], {title: 'Tipo', height: 350});
+
+            // Update Trend Chart
+            Plotly.react('trendChart', [
+                {x: Object.keys(metrics.created_trend), y: Object.values(metrics.created_trend), name:'Created', type:'scatter', mode:'lines+markers', line:{color:'#6a82fb'}},
+                {x: Object.keys(metrics.resolved_trend), y: Object.values(metrics.resolved_trend), name:'Released', type:'scatter', mode:'lines+markers', line:{color:'#4CAF50'}}
+            ], {
+                title: 'CSRs Created & Released by Week',
+                xaxis: {title: 'Week'},
+                yaxis: {title: 'Number of CSRs'},
+                height: 400
+            });
+
+            // Update Bar Charts (Workload)
+            Plotly.react('personaBar', [{x: Object.keys(metrics.by_persona), y: Object.values(metrics.by_persona), type:'bar', marker:{color:'#6a82fb'}}], {title: 'CSRs by Persona Asignada', height: 350});
+            Plotly.react('devBar', [{x: Object.keys(metrics.by_dev), y: Object.values(metrics.by_dev), type:'bar', marker:{color:'#fc5c7d'}}], {title: 'CSRs by Desarrollador', height: 350});
+
+            // Update Bar Charts (Average Delay)
+            Plotly.react('personaDelay', [{x: Object.keys(metrics.delay_by_persona), y: Object.values(metrics.delay_by_persona).map(v => v.toFixed(1)), type:'bar', marker:{color:'#6a82fb'} }], {title: 'Avg Delay by Persona Asignada (Days)', height: 350});
+            Plotly.react('devDelay', [{x: Object.keys(metrics.delay_by_dev), y: Object.values(metrics.delay_by_dev).map(v => v.toFixed(1)), type:'bar', marker:{color:'#fc5c7d'}}], {title: 'Avg Delay by Desarrollador (Days)', height: 350});
+
+            // Update Tables
+            function updateTable(tableId, data, colNames) {
+                const tableBody = document.querySelector(`#${tableId} tbody`);
+                tableBody.innerHTML = ''; // Clear existing rows
+                data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    // Manually map to ensure correct order and format
+                    const summary = row.Resumen || '';
+                    const key = row.Clave || '';
+                    const metricValue = typeof row[colNames[2]] === 'number' ? row[colNames[2]].toFixed(1) : (row[colNames[2]] || '0');
+                    const assignee = row['Persona asignada'] || '';
+                    const developer = row['Desarrollador'] || '';
+                    
+                    tr.innerHTML = `<td>${summary}</td><td>${key}</td><td>${metricValue}</td><td>${assignee}</td><td>${developer}</td>`;
+                    tableBody.appendChild(tr);
+                });
+            }
+
+            updateTable('tableLate', metrics.top_late, ['Resumen', 'Clave', 'Liberación retrasada por', 'Persona asignada', 'Desarrollador']);
+            updateTable('tableDevGT30', metrics.top_dev_gt30, ['Resumen', 'Clave', 'Estado Desarrollo > 30 días', 'Persona asignada', 'Desarrollador']);
+            updateTable('tableDevLibGT60', metrics.top_devlib_gt60, ['Resumen', 'Clave', 'Desarrollo y liberada > 60 Días', 'Persona asignada', 'Desarrollador']);
+        }
+
+        function filterData() {
+            const filterEstado = document.getElementById('filterEstado').value;
+            const filterPr = document.getElementById('filterPr').value;
+            const filterTipo = document.getElementById('filterTipo').value;
+            const filterPersona = document.getElementById('filterPersona').value;
+            const filterDesarrollador = document.getElementById('filterDesarrollador').value;
+            const startDateStr = document.getElementById('startDate').value;
+            const endDateStr = document.getElementById('endDate').value;
+
+            // Convert date strings to Date objects for comparison
+            const startDate = startDateStr ? new Date(startDateStr) : null;
+            // Set end date to end of the day for inclusive filtering
+            const endDate = endDateStr ? new Date(endDateStr) : null;
+            if (endDate) {
+                endDate.setHours(23, 59, 59, 999);
+            }
+
+            currentData = originalData.filter(d => {
+                // Categorical filters
+                const matchEstado = filterEstado === '' || d['Estado'] === filterEstado;
+                const matchPr = filterPr === '' || d['Pr'] === filterPr;
+                const matchTipo = filterTipo === '' || d['T'] === filterTipo;
+                const matchPersona = filterPersona === '' || d['Persona asignada'] === filterPersona;
+                const matchDesarrollador = filterDesarrollador === '' || d['Desarrollador'] === filterDesarrollador;
+
+                // Date filter (Fecha Real de Liberación)
+                let matchDate = true;
+                if (d['Fecha Real de Liberación']) {
+                    const releaseDate = new Date(d['Fecha Real de Liberación']);
+                    if (startDate && releaseDate < startDate) {
+                        matchDate = false;
+                    }
+                    if (endDate && releaseDate > endDate) {
+                        matchDate = false;
+                    }
+                } else if (startDate || endDate) {
+                    // If a date filter is applied but the CSR has no release date, it doesn't match
+                    matchDate = false;
+                }
+                
+                return matchEstado && matchPr && matchTipo && matchPersona && matchDesarrollador && matchDate;
+            });
+            updateDashboard(calculateMetrics(currentData));
+        }
+
+        function resetFilters() {
+            document.getElementById('filterEstado').value = '';
+            document.getElementById('filterPr').value = '';
+            document.getElementById('filterTipo').value = '';
+            document.getElementById('filterPersona').value = '';
+            document.getElementById('filterDesarrollador').value = '';
+            
+            // Reset date filters to min/max from original data
+            const minReleaseDate = originalData.reduce((min, d) => {
+                if (d['Fecha Real de Liberación']) {
+                    const current = new Date(d['Fecha Real de Liberación']);
+                    return min === null || current < min ? current : min;
+                }
+                return min;
+            }, null);
+
+            const maxReleaseDate = originalData.reduce((max, d) => {
+                if (d['Fecha Real de Liberación']) {
+                    const current = new Date(d['Fecha Real de Liberación']);
+                    return max === null || current > max ? current : max;
+                }
+                return max;
+            }, null);
+            
+            document.getElementById('startDate').value = minReleaseDate ? minReleaseDate.toISOString().split('T')[0] : '';
+            document.getElementById('endDate').value = maxReleaseDate ? maxReleaseDate.toISOString().split('T')[0] : '';
+
+            currentData = originalData;
+            updateDashboard(calculateMetrics(currentData));
+        }
+
+        // Initial dashboard render
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set initial date filter values based on data range
+            const initialMetrics = calculateMetrics(originalData);
+
+            // Dynamically set date inputs based on data
+            const releaseDates = originalData
+                                    .map(d => d['Fecha Real de Liberación'])
+                                    .filter(d => d); // Filter out empty/null dates
+            
+            let minDate = '';
+            let maxDate = '';
+
+            if (releaseDates.length > 0) {
+                const dates = releaseDates.map(dateStr => new Date(dateStr));
+                const min = new Date(Math.min(...dates));
+                const max = new Date(Math.max(...dates));
+                minDate = min.toISOString().split('T')[0];
+                maxDate = max.toISOString().split('T')[0];
+            }
+
+            document.getElementById('startDate').value = minDate;
+            document.getElementById('endDate').value = maxDate;
+
+            updateDashboard(initialMetrics);
+        });
+
+    </script>
+</body>
+</html>
